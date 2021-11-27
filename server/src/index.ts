@@ -12,6 +12,7 @@ import "./helpers/init_mongodb";
 import "./helpers/init_redis";
 
 import authRoute from "./routes/user.router";
+import { verifyAccessToken } from "./helpers/jwt_helper";
 
 dotenv.config();
 
@@ -22,7 +23,13 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get("/", (req: Request, res: Response, next: NextFunction) => {});
+app.get(
+  "/",
+  verifyAccessToken as any,
+  (req: Request, res: Response, next: NextFunction) => {
+    res.send("ok");
+  }
+);
 app.use("/auth", authRoute);
 
 app.use(async (req: Request, res: Response, next: NextFunction) => {

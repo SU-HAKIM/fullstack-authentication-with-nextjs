@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import createError from "http-errors";
 import dotenv from "dotenv";
 import client from "./init_redis";
+import { NextFunction, Request, Response } from "express";
 
 dotenv.config();
 
@@ -36,8 +37,67 @@ export const signRefreshToken = (userId: string) => {
           resolve(token);
         })
         .catch((err) => {
-          reject(err);
+          reject(new createError.InternalServerError(err.message));
         });
     });
+  });
+};
+
+type Req = Request & {
+  payload: jwt.JwtPayload | undefined;
+};
+
+export const verifyAccessToken = (
+  req: Req,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    let passedToken = req.headers["authorization"];
+    if (!passedToken) throw new createError.Unauthorized();
+    let token = passedToken?.split(" ")[1];
+    jwt.verify(
+      token,
+      process.env.ACCESS_TOKEN_SECRET_KEY as string,
+      (err, payload) => {
+        if (err) {
+          if ((err.name = "JsonWebTokenError")) {
+            return next(new createError.Unauthorized());
+          } else {
+            return next(new createError.Unauthorized(err.message));
+          }
+        }
+        req.payload = payload;
+        next();
+      }
+    );
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+};
+
+export const verifyRefreshToken = async (refreshToken: string) => {
+  return new Promise((resolve, reject) => {
+    if (!refreshToken) reject(new createError.Unauthorized());
+    jwt.verify(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET_KEY as string,
+      (err, options) => {
+        if (err) reject(new createError.Unauthorized());
+        const userId = options?.aud;
+        client
+          .get(userId as string)
+          .then((value) => {
+            if (value === refreshToken) {
+              resolve(userId);
+            }
+            reject(new createError.Unauthorized());
+          })
+          .catch((err) => {
+            reject(new createError.InternalServerError(err.message));
+          });
+      }
+    );
   });
 };

@@ -1,7 +1,15 @@
 import { NextFunction, Request, Response } from "express";
 import createError from "http-errors";
-import { signAccessToken, signRefreshToken } from "../helpers/jwt_helper";
-import { validateRegisterData } from "../helpers/validationSchema";
+import client from "../helpers/init_redis";
+import {
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+} from "../helpers/jwt_helper";
+import {
+  validateLoginData,
+  validateRegisterData,
+} from "../helpers/validationSchema";
 import User from "../models/user.model";
 
 export const registerUser = async (
@@ -31,6 +39,14 @@ export const loginUser = async (
   next: NextFunction
 ) => {
   try {
+    const result = await validateLoginData.validateAsync(req.body);
+    const oldUser = await User.findOne({ email: result.email });
+    if (!oldUser) throw new createError.NotFound(`User is not registered.`);
+    const isRightPassword = await oldUser.validatePassword(result.password);
+    if (!isRightPassword) throw new createError.Unauthorized();
+    const accessToken = await signAccessToken(String(oldUser._id));
+    const refreshToken = await signRefreshToken(String(oldUser._id));
+    res.send({ accessToken, refreshToken });
   } catch (error) {
     console.log(error);
     next(error);
@@ -43,6 +59,12 @@ export const logoutUser = async (
   next: NextFunction
 ) => {
   try {
+    let { refreshToken } = req.body;
+    if (!refreshToken) throw new createError.BadRequest();
+    const userId = await verifyRefreshToken(refreshToken);
+    const val = await client.DEL(userId as string);
+    console.log(val);
+    res.sendStatus(204);
   } catch (error) {
     console.log(error);
     next(error);
@@ -55,6 +77,13 @@ export const refreshTokenController = async (
   next: NextFunction
 ) => {
   try {
+    let { refreshToken } = req.body;
+    if (!refreshToken) throw new createError.BadRequest();
+    const userId = await verifyRefreshToken(refreshToken);
+    const accessToken = await signAccessToken(String(userId));
+    const newRefreshToken = await signRefreshToken(String(userId));
+
+    res.send({ accessToken, refreshToken: newRefreshToken });
   } catch (error) {
     console.log(error);
     next(error);
