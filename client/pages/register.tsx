@@ -35,9 +35,18 @@ const Register: NextPage = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setData({ ...data, [e.target.name]: e.target.value });
   };
-  const submitRegisterForm = (e: React.SyntheticEvent) => {
+  const submitRegisterForm = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     console.log(data);
+    let response = await fetch("http://localhost:5000/auth/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    let tokens = await response.json();
+    console.log(tokens);
   };
   const inheritEmail = generateInformation(
     "email",
@@ -60,7 +69,6 @@ const Register: NextPage = () => {
     data.username,
     handleChange
   );
-  console.log(inheritEmail);
   return (
     <Container>
       <CardComponent

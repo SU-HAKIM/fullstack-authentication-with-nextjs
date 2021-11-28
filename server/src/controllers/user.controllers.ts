@@ -18,6 +18,7 @@ export const registerUser = async (
   next: NextFunction
 ) => {
   try {
+    console.log(req.body);
     const result = await validateRegisterData.validateAsync(req.body);
     const oldUser = await User.findOne({ email: result.email });
     if (oldUser)

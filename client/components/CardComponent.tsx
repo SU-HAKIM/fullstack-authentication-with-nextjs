@@ -25,7 +25,7 @@ interface Props {
 const CardComponent = (props: Props) => {
   return (
     <Card className="w-50 mt-5 mx-auto">
-      <CardHeader className="display-4">Login Here...</CardHeader>
+      <CardHeader className="display-4">{props.cardText}</CardHeader>
       <CardBody>
         <Form
           onSubmit={
