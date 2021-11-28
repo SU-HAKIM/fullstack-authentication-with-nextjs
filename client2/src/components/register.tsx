@@ -1,10 +1,9 @@
-import { NextPage } from "next";
 import React from "react";
 import { Container } from "reactstrap";
 import CardComponent from "../components/CardComponent";
 import Cookies from "js-cookie";
-import { useRouter } from "next/router";
 import axios from "axios";
+import { useHistory } from "react-router-dom";
 
 function generateInformation(
   name: string,
@@ -29,8 +28,8 @@ interface State {
   password: string;
 }
 
-const Register: NextPage = () => {
-  const router = useRouter();
+const Register = () => {
+  const history = useHistory();
   const [data, setData] = React.useState<State>({
     username: "",
     email: "",
@@ -45,8 +44,18 @@ const Register: NextPage = () => {
       "http://localhost:5000/auth/register",
       data
     );
-    console.log(response);
-    console.log("called");
+    console.log(response.data);
+    if (response.data.registered) {
+      Cookies.set("rt", response.data.tokens.refreshToken);
+      let newResponse = await axios.get("http://localhost:5000/", {
+        headers: {
+          Authorization: "Bearer " + response.data.tokens.accessToken,
+        },
+      });
+      if (newResponse.data.access) {
+        history.push("/");
+      }
+    }
   };
   const inheritEmail = generateInformation(
     "email",

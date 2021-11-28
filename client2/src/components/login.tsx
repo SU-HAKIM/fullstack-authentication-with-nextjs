@@ -1,10 +1,14 @@
-import { NextPage } from "next";
+import axios from "axios";
+import Cookies from "js-cookie";
 import React from "react";
+import { useHistory } from "react-router-dom";
 import { Container } from "reactstrap";
 import CardComponent from "../components/CardComponent";
-import Cookies from "js-cookie";
-import { useRouter } from "next/router";
-import axios from "axios";
+
+interface FormData {
+  email: string;
+  password?: string;
+}
 
 function generateInformation(
   name: string,
@@ -24,29 +28,34 @@ function generateInformation(
 }
 
 interface State {
-  username: string;
   email: string;
   password: string;
 }
 
-const Register: NextPage = () => {
-  const router = useRouter();
+const Login = () => {
+  const history = useHistory();
   const [data, setData] = React.useState<State>({
-    username: "",
     email: "",
     password: "",
   });
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setData({ ...data, [e.target.name]: e.target.value });
   };
-  const submitRegisterForm = async (e: React.SyntheticEvent) => {
+  const submitLoginForm = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    let response = await axios.post(
-      "http://localhost:5000/auth/register",
-      data
-    );
+    let response = await axios.post("http://localhost:5000/auth/login", data);
     console.log(response);
-    console.log("called");
+    if (!response.data.error) {
+      Cookies.set("rt", response.data.tokens.refreshToken);
+      let newResponse = await axios.get("http://localhost:5000/", {
+        headers: {
+          Authorization: "Bearer " + response.data.tokens.accessToken,
+        },
+      });
+      if (newResponse.data.access) {
+        history.push("/");
+      }
+    }
   };
   const inheritEmail = generateInformation(
     "email",
@@ -62,25 +71,17 @@ const Register: NextPage = () => {
     data.password,
     handleChange
   );
-  const inheritUserName = generateInformation(
-    "username",
-    "UserName",
-    "text",
-    data.username,
-    handleChange
-  );
   return (
     <Container>
       <CardComponent
-        cardText="Register User..."
-        buttonText="register"
-        inheritUserName={inheritUserName}
+        cardText="Login Here..."
+        buttonText="login"
         inheritEmail={inheritEmail}
         inheritPassword={inheritPassword}
-        submitRegisterForm={submitRegisterForm}
+        submitLoginForm={submitLoginForm}
       />
     </Container>
   );
 };
 
-export default Register;
+export default Login;

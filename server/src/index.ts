@@ -7,6 +7,8 @@ import express, {
 import morgan from "morgan";
 import dotenv from "dotenv";
 import createError from "http-errors";
+import cors from "cors";
+import jwt from "jsonwebtoken";
 
 import "./helpers/init_mongodb";
 import "./helpers/init_redis";
@@ -18,25 +20,37 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const corsOptions = {
+  origin: "*",
+  credentials: true,
+  optionSuccessStatus: 200,
+  methods: ["GET", "PUT", "POST", "DELETE"],
+};
 
+app.use(cors(corsOptions));
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// app.use((req, res, next) => {
+//   res.append("Access-Control-Allow-Origin", ["*"]);
+//   res.append("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
+//   res.append("Access-Control-Allow-Headers", ["*"]);
+//   res.append("Access-Control-Allow-Credentials", "true");
+//   next();
+// });
+
+// type Req = Request & {
+//   payload: jwt.JwtPayload | undefined;
+// };
 
 app.get(
   "/",
   verifyAccessToken as any,
   (req: Request, res: Response, next: NextFunction) => {
-    res.send("ok");
+    res.status(200).send({ access: true });
   }
 );
-
-app.use((req, res, next) => {
-  res.append("Access-Control-Allow-Origin", ["*"]);
-  res.append("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
-  res.append("Access-Control-Allow-Headers", "Content-Type");
-  next();
-});
 
 app.use("/auth", authRoute);
 

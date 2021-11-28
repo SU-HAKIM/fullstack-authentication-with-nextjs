@@ -8,7 +8,7 @@ dotenv.config();
 
 export const signAccessToken = (userId: string) => {
   return new Promise((resolve, reject) => {
-    const options = { expiresIn: "5m", issuer: "", audience: userId };
+    const options = { expiresIn: "2m", issuer: "", audience: userId };
     const secret = process.env.ACCESS_TOKEN_SECRET_KEY;
     const payload = {};
     jwt.sign(payload, secret as string, options, (err, token) => {
@@ -54,19 +54,24 @@ export const verifyAccessToken = (
 ) => {
   try {
     let passedToken = req.headers["authorization"];
+    console.log(passedToken);
     if (!passedToken) throw new createError.Unauthorized();
     let token = passedToken?.split(" ")[1];
+    console.log();
     jwt.verify(
       token,
       process.env.ACCESS_TOKEN_SECRET_KEY as string,
       (err, payload) => {
         if (err) {
           if ((err.name = "JsonWebTokenError")) {
+            console.log("jwt error");
             return next(new createError.Unauthorized());
           } else {
             return next(new createError.Unauthorized(err.message));
           }
+          // return res.status(500).send(err);
         }
+        console.log(payload, "payload");
         req.payload = payload;
         next();
       }
@@ -84,15 +89,19 @@ export const verifyRefreshToken = async (refreshToken: string) => {
       refreshToken,
       process.env.REFRESH_TOKEN_SECRET_KEY as string,
       (err, options) => {
-        if (err) reject(new createError.Unauthorized());
+        if (err) return resolve({ error: err.message });
         const userId = options?.aud;
+        console.log(userId);
         client
-          .get(userId as string)
+          .GET(userId as string)
           .then((value) => {
+            console.log(value === refreshToken); //!not equal
+            console.log(value, "value");
             if (value === refreshToken) {
+              //!error
               resolve(userId);
             }
-            reject(new createError.Unauthorized());
+            resolve(new createError.Unauthorized());
           })
           .catch((err) => {
             reject(new createError.InternalServerError(err.message));

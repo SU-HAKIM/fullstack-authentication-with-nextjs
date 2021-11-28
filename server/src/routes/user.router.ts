@@ -5,12 +5,13 @@ import {
   refreshTokenController,
   registerUser,
 } from "../controllers/user.controllers";
+import { validateLogin, validateRegister } from "../helpers/validationSchema";
 
 const router = express.Router();
 
-router.post("/register", registerUser);
-router.post("/login", loginUser);
+router.post("/register", validateRegister, registerUser);
+router.post("/login", validateLogin, loginUser);
 router.post("/refresh-token", refreshTokenController);
-router.delete("/logout", logoutUser);
+router.post("/logout", logoutUser);
 
 export default router;
