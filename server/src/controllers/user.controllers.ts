@@ -92,17 +92,21 @@ export const refreshTokenController = async (
   try {
     let { refreshToken } = req.body;
     console.log(refreshToken, "generate rt");
-    if (!refreshToken) throw new createError.BadRequest();
+    if (!refreshToken)
+      return res.send({ error: true, message: new createError.BadRequest() });
     const userId = await verifyRefreshToken(refreshToken);
     console.log(userId, "userId");
     if (typeof userId !== typeof "") {
       console.log("user error");
-      return res.send(userId);
+      return res.send({ error: true, message: userId });
     }
     const accessToken = await signAccessToken(String(userId));
     const newRefreshToken = await signRefreshToken(String(userId));
 
-    res.status(200).send({ accessToken, refreshToken: newRefreshToken });
+    res.status(200).send({
+      error: false,
+      tokens: { accessToken, refreshToken: newRefreshToken },
+    });
   } catch (error) {
     console.log(error);
     next(error);

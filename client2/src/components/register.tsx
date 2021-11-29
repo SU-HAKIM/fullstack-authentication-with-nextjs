@@ -35,6 +35,29 @@ const Register = () => {
     email: "",
     password: "",
   });
+
+  let rt = Cookies.get("rt");
+  React.useEffect(() => {
+    console.log(rt, "register");
+    let getTokens = async function () {
+      if (!rt) {
+        return;
+      }
+      let response = await axios.post(
+        "http://localhost:5000/auth/refresh-token",
+        {
+          refreshToken: rt,
+        }
+      );
+      console.log(response.data, "register");
+      if (!response.data.error) {
+        Cookies.set("rt", response.data.tokens.refreshToken);
+        history.push("/");
+      }
+    };
+    getTokens();
+  }, [history, rt]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setData({ ...data, [e.target.name]: e.target.value });
   };

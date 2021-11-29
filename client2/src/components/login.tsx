@@ -38,13 +38,36 @@ const Login = () => {
     email: "",
     password: "",
   });
+
+  let rt = Cookies.get("rt");
+  React.useEffect(() => {
+    let getTokens = async function () {
+      if (!rt) {
+        return;
+      }
+      console.log(rt, "login");
+      let response = await axios.post(
+        "http://localhost:5000/auth/refresh-token",
+        {
+          refreshToken: rt,
+        }
+      );
+      console.log(response, "login");
+      if (!response.data.error) {
+        Cookies.set("rt", response.data.tokens.refreshToken);
+        history.push("/");
+      }
+    };
+    getTokens();
+  }, [history, rt]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setData({ ...data, [e.target.name]: e.target.value });
   };
   const submitLoginForm = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     let response = await axios.post("http://localhost:5000/auth/login", data);
-    console.log(response);
+    console.log(response, "login");
     if (!response.data.error) {
       Cookies.set("rt", response.data.tokens.refreshToken);
       let newResponse = await axios.get("http://localhost:5000/", {
@@ -52,6 +75,7 @@ const Login = () => {
           Authorization: "Bearer " + response.data.tokens.accessToken,
         },
       });
+      console.log(newResponse, "newResponse login");
       if (newResponse.data.access) {
         history.push("/");
       }
